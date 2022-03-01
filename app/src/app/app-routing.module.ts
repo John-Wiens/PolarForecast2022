@@ -2,9 +2,11 @@ import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { BrowserModule } from "@angular/platform-browser";
 import { Routes, RouterModule } from "@angular/router";
-
 import { AdminLayoutComponent } from "./layouts/admin-layout/admin-layout.component";
-
+import { MatSortModule, MatSort} from '@angular/material/sort';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatTableModule} from '@angular/material/table';
 const routes: Routes = [
   {
     path: "",
@@ -29,8 +31,13 @@ const routes: Routes = [
 
 @NgModule({
   imports: [
+    MatTableModule ,
     CommonModule,
     BrowserModule,
+    MatTableModule,
+    MatSortModule,
+    MatAutocompleteModule,
+    MatExpansionModule,
     RouterModule.forRoot(routes, {
       useHash: true
     })
