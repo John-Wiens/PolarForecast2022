@@ -10,15 +10,15 @@ import { MatTableDataSource } from '@angular/material/table';
 })
 export class RankingsComponent implements OnInit {
 
-  
-  displayedColumns: string[] = ['rank', 'team', 'opr', 'auto','cargo','cargo_count','climb','fouls','power'];
-  columnHeaders = ['Rank', 'Team', 'OPR', 'Auto','Cargo','Cargo Count','Climb','Fouls','Power'].slice();
+
+  displayedColumns: string[] = ['rank', 'team', 'opr', 'auto', 'cargo', 'cargo_count', 'climb', 'fouls', 'power'];
+  columnHeaders = ['Rank', 'Team', 'OPR', 'Auto', 'Cargo', 'Cargo Count', 'Climb', 'Fouls', 'Power'].slice();
   columnsToDisplay: string[] = this.displayedColumns.slice();
   //displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
 
-  data:any = [];
+  data: any = [];
   @ViewChild(MatSort) sort: MatSort;
-  
+
   dataSource = null;
 
   ngOnInit() {
@@ -29,25 +29,25 @@ export class RankingsComponent implements OnInit {
 
   getRankings() {
     const event = this.getEvent();
-    if(event!= null){
+    if (event != null) {
       this.api.getRankings(event)
-      .subscribe(data => {
-        if ('rankings' in data){
-          this.data = data['rankings'];
-          console.log(this.data);
-          this.dataSource = new MatTableDataSource(this.data);
-          this.dataSource.sort = this.sort;
-        }
-      });
+        .subscribe(data => {
+          if ('rankings' in data) {
+            this.data = data['rankings'];
+            console.log(this.data);
+            this.dataSource = new MatTableDataSource(this.data);
+            this.dataSource.sort = this.sort;
+          }
+        });
     }
   }
 
-  getEvent(){
+  getEvent() {
     const event = localStorage.getItem('event');
-    if(event == null){
-        return "2022week0"
-    } else{
-        return event;
+    if (event == null) {
+      return ""
+    } else {
+      return event;
     }
   }
 

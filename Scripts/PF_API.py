@@ -9,7 +9,7 @@ from Update_Data import update_data
 
 app = FastAPI()
 
-run_analysis = True
+run_analysis = False
 
 origins = [
     "http://localhost",
@@ -34,7 +34,8 @@ def read_root():
 
 @app.get("/events")
 def read_item():
-    filters = {'event_type':99}
+    #filters = {'event_type':99}
+    filters = {}
     response = db.find('events', filters)
     if response is not None:
         data = []

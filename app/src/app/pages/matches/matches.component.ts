@@ -1,4 +1,4 @@
-import { Component, OnInit, Pipe, ViewChild, HostListener} from '@angular/core';
+import { Component, OnInit, Pipe, ViewChild, HostListener } from '@angular/core';
 import { DataSource } from '@angular/cdk/table';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { CdkTableModule } from "@angular/cdk/table";
@@ -12,7 +12,7 @@ import { ApiService } from '../../services/api.service';
 })
 export class MatchesComponent implements OnInit {
 
-  displayedColumns: string[] = ['match_number','blue_score', 'blue_rp', 'red_score', 'red_rp','results'];
+  displayedColumns: string[] = ['match_number', 'blue_score', 'blue_rp', 'red_score', 'red_rp', 'results'];
 
   dataSource = null;
   finalsDataSource = null;
@@ -35,84 +35,93 @@ export class MatchesComponent implements OnInit {
   }
 
   @HostListener('window:resize', ['$event'])
-    onResize(event) {
+  onResize(event) {
     this.innerWidth = window.innerWidth;
   }
 
-  getResponsiveMode(){
+  getResponsiveMode() {
     return this.innerWidth < 800;
   }
 
   ngAfterViewInit() {
     this.dataSource.sort = this.sort;
+    //this.dataSource.sortingDataAccessor = (data, attribute) => data[attribute];
     this.finalsDataSource.sort = this.sort;
   }
 
 
   getMatches() {
-    const event = '2022week0';//localStorage.getItem('event');
-    if(event!= null){
-      this.api.getMatches(event,'qm')
-      .subscribe(data => {
-        if ('data' in data){
-          this.data = data['data'];
-          console.log(this.data);
-          this.dataSource = new MatTableDataSource(this.data);
-          this.dataSource.sort = this.sort;
-          let elims = true;
-          for(let i=0; i < this.data.length; i++){
-            if(this.data[i]['comp_level'] != 'qm'){
-              elims = false;
+    const event = localStorage.getItem('event');
+    if (event != null) {
+      this.api.getMatches(event, 'qm')
+        .subscribe(data => {
+          if ('data' in data) {
+            data['data'].sort(function (a, b) {
+              if (a.match_number < b.match_number) return -1;
+              if (a.match_number > b.match_number) return 1;
+              return 0;
+            });
+            this.data = data['data'];
+            console.log(this.data);
+            this.dataSource = new MatTableDataSource(this.data);
+            this.dataSource.sort = this.sort;
+            let elims = true;
+            for (let i = 0; i < this.data.length; i++) {
+              if (this.data[i]['comp_level'] != 'qm') {
+                elims = false;
+              }
+              console.log(this.data[i]);
+              //this.data[i]['match_number'] = String(this.data[i]['match_number']).padStart(3, '0');
             }
+            if (elims) {
+              this.getFinalsMatches();
+            }
+
           }
-          if(elims){
-            this.getFinalsMatches();
-          }
-        }
-      });
+        });
     }
   }
 
-  getFinalsMatches(){
-    const event = '2022week0';//localStorage.getItem('event');
-    if(event!= null){
-      this.api.getMatches(event,'elim')
-      .subscribe(data => {
-        if ('data' in data){
-          this.finalsData = data['data'];
+  getFinalsMatches() {
+    const event = localStorage.getItem('event');
+    if (event != null) {
+      this.api.getMatches(event, 'elim')
+        .subscribe(data => {
+          if ('data' in data) {
+            this.finalsData = data['data'];
 
-          for(let i=0; i < this.finalsData.length;i++){
-            let entry = this.finalsData[i];
-            let comp_level = entry['comp_level']
-            if(comp_level == 'f'){
-              entry['match_order'] = 100 + entry['set_number'];
-            }else if(comp_level == 'sf'){
-              entry['match_order'] = 10 + entry['set_number'];
-            } else if(comp_level == 'qf'){
-              entry['match_order'] = entry['set_number'];
+            for (let i = 0; i < this.finalsData.length; i++) {
+              let entry = this.finalsData[i];
+              let comp_level = entry['comp_level']
+              if (comp_level == 'f') {
+                entry['match_order'] = 100 + entry['set_number'];
+              } else if (comp_level == 'sf') {
+                entry['match_order'] = 10 + entry['set_number'];
+              } else if (comp_level == 'qf') {
+                entry['match_order'] = entry['set_number'];
+              }
             }
-          }
 
-          console.log(this.finalsData);
-          this.finalsDataSource = new MatTableDataSource(this.finalsData);
-          this.finalsDataSource.sort = this.finalsSort;
-        }
-      });
+            console.log(this.finalsData);
+            this.finalsDataSource = new MatTableDataSource(this.finalsData);
+            this.finalsDataSource.sort = this.finalsSort;
+          }
+        });
     }
   }
 
-  getWinner(match){
-    if(match['blue_score'] > match['red_score']){
+  getWinner(match) {
+    if (match['blue_score'] > match['red_score']) {
       return 'Blue'
-    } else{
+    } else {
       return 'Red'
-    } 
+    }
   }
 
-  getWinnerPoints(match){
-    if(match['blue_score'] > match['red_score']){
+  getWinnerPoints(match) {
+    if (match['blue_score'] > match['red_score']) {
       return Math.round(match['blue_score'])
-    } else{
+    } else {
       return Math.round(match['red_score'])
     }
   }

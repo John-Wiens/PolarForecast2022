@@ -16,31 +16,24 @@ export const ROUTES: RouteInfo[] = [
     class: ""
   },
   {
-    path: "/tables",
-    title: "Table List",
-    rtlTitle: "",
-    icon: "icon-puzzle-10",
-    class: ""
-  },
-  {
     path: "/rankings",
     title: "Rankings",
     rtlTitle: "",
-    icon: "icon-puzzle-10",
+    icon: "icon-trophy",
     class: ""
   },
   {
     path: "/matches",
     title: "Matches",
     rtlTitle: "",
-    icon: "icon-puzzle-10",
+    icon: "icon-calendar-60",
     class: ""
   },
   {
     path: "/predictions",
     title: "Predictions",
     rtlTitle: "",
-    icon: "icon-puzzle-10",
+    icon: "icon-bulb-63",
     class: ""
   },
 ];
