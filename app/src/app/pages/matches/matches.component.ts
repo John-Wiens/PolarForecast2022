@@ -19,6 +19,7 @@ export class MatchesComponent implements OnInit {
 
   data: any = [];//this.ELEMENT_DATA;
   finalsData: any = [];
+  elims: boolean = false;
 
   @ViewChild('sort') sort: MatSort;
   @ViewChild('finalsSort') finalsSort: MatSort;
@@ -67,14 +68,15 @@ export class MatchesComponent implements OnInit {
             this.dataSource.sort = this.sort;
             let elims = true;
             for (let i = 0; i < this.data.length; i++) {
-              if (this.data[i]['comp_level'] != 'qm') {
+              if (this.data[i]['comp_level'] != 'Actual') {
                 elims = false;
               }
-              console.log(this.data[i]);
               //this.data[i]['match_number'] = String(this.data[i]['match_number']).padStart(3, '0');
             }
             if (elims) {
               this.getFinalsMatches();
+              this.elims = true;
+              console.log(this.elims);
             }
 
           }
@@ -124,6 +126,10 @@ export class MatchesComponent implements OnInit {
     } else {
       return Math.round(match['red_score'])
     }
+  }
+
+  elimMatches() {
+    return this.elims;
   }
 
 }

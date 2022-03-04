@@ -186,6 +186,10 @@ def update_match_predictions(event, matches, teams):
             
             match["blue_extra_rp"] = 0
             match["red_extra_rp"] = 0
+
+            blue_climb_variance = 0
+            red_climb_variance = 0
+
             for i in range(0,3):
                 try:
                     blue_team = db.find_one('teams', match['blue'+str(i)])
@@ -208,29 +212,32 @@ def update_match_predictions(event, matches, teams):
 
 
                     predicted_blue_cells += clean_num(blue_team["cargo_count_pr"])
-                    predicted_blue_endgame += clean_num(blue_team["endgame_pr"])
+                    predicted_blue_endgame += clean_num(blue_team["climb_pr"])
                     blue_climb_variance += clean_num(blue_team["climb_pr_var"])
 
                     predicted_red_cells += clean_num(red_team["cargo_count_pr"])
-                    predicted_red_endgame += clean_num(red_team["endgame_pr"])
+                    predicted_red_endgame += clean_num(red_team["climb_pr"])
                     red_climb_variance += clean_num(red_team["climb_pr_var"])
 
                 except Exception as e:
+                    print('Unable to Update Event Predictions')
                     db.log_msg("Issue Updating Event Match Predictions", event +  str(e))
                     
 
-            if match["blue_endgame_score"] >= 16:
+            if predicted_blue_endgame >= 16:
                 match["blue_hanger_rp"] = 1
                 match["blue_rp"] +=1
-            if match["blue_cargo_rp"] >= 20:
+
+            if predicted_blue_cells >= 20:
                 match["blue_cargo_rp"] = 1
                 match["blue_rp"] +=1
 
 
-            if match["red_endgame_score"] >= 16:
+            if predicted_red_endgame >= 16:
                 match["red_hanger_rp"] = 1
                 match["red_rp"] +=1
-            if match["red_cargo_rp"] >= 20:
+                
+            if predicted_red_cells >= 20:
                 match["red_cargo_rp"] = 1
                 match["red_rp"] +=1
 
@@ -240,9 +247,11 @@ def update_match_predictions(event, matches, teams):
             win_margin = match["blue_score"] - match["red_score"]
             win_variance = blue_variance + red_variance
 
-            win_prob = 0.5 * math.erfc(-win_margin/math.sqrt(2*win_variance))
-            win_prob = get_prob(win_margin, win_variance)
-
+            if win_variance >0:
+                #win_prob = 0.5 * math.erfc(-win_margin/math.sqrt(2*win_variance))
+                win_prob = get_prob(win_margin, win_variance)
+            else:
+                win_prob = 0.99999
 
             if match["blue_score"] > match["red_score"]:
                 match["blue_rp"] +=2
