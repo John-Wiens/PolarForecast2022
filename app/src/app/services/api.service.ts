@@ -6,7 +6,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
   providedIn: 'root'
 })
 export class ApiService {
-  API_URL = 'http://127.0.0.1:8000'//'https://polarforecast-api-2022.azurewebsites.net'
+  API_URL = 'https://polarforecast-api-2022.azurewebsites.net'//'http://127.0.0.1:8000'
   constructor(private http: HttpClient) { }
 
   getRankings(event_key) {
