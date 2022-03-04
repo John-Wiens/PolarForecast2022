@@ -28,7 +28,7 @@ def update_events(force_update = False):
             start = get_as_date(event['start_date'])
             end = get_as_date(event['end_date'])
             
-            if event['event_code'] == 'week0': #today >= start and today <= end or force_update or : # code
+            if today >= start and today <= end or force_update: # code event['event_code'] == 'week0': #
                 event_list.append(event['key'])
                 db.update_one('events', event)
 
