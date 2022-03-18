@@ -28,9 +28,9 @@ def update_events(force_update = False):
             start = get_as_date(event['start_date'])
             end = get_as_date(event['end_date'])
             
-            if event['event_code'] == 'code':
+            #if event['event_code'] == 'code':
             #if today >= start:
-            #if today >= start and today <= end or force_update: # code event['event_code'] == 'week0': #
+            if today >= start and today <= end or force_update: # code event['event_code'] == 'week0': #
                 event_list.append(event['key'])
                 db.update_one('events', event)
 
@@ -122,10 +122,10 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                 if archive_entry is not None and archive_entry['opr'] is not None:
                     normalized_opr = (clean_num(archive_entry['opr']) * 0.75)
                     normalized_stats = map_opr(normalized_opr, opr_coeffecients)
-                    team[2][0] = normalized_stats[0] # Taxi
+                    team[2][0] = normalized_stats[3] # Taxi
                     team[1][1] = normalized_stats[2] / 4.0 # Auto
                     team[1][3] = normalized_stats[1] / 2.0 # Cargo                    
-                    team[2][1] = normalized_stats[3] # Climb
+                    team[2][1] = normalized_stats[0] # Climb
     
                 
 
@@ -138,6 +138,10 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
 
 
     opr_matrix = team_powers[:,0] * 2 + team_powers[:,1] * 4 + team_powers[:,2] + team_powers[:,3] * 2 + labeled_metrics[:,0] + labeled_metrics[:,1]
+    
+    if opr_matrix.shape[0] == 0:
+        return
+
     max_opr = np.max(opr_matrix)
     for team in teams:
         opr = opr_matrix[index]
@@ -381,13 +385,14 @@ def map_opr(opr, coeffecients):
 
 def update_data():
     if(TBA.check_connection()):
-        events = update_events(force_update = False)
+        force_update = False
+        events = update_events(force_update = force_update)
         opr_coeffecients = update_opr_distribution_mapping()
 
         for event in events:
-            matches = update_matches(event)
-            teams = update_teams(event)
-            update_calculations(event, matches, teams, opr_coeffecients)
+            matches = update_matches(event, force_update= force_update)
+            teams = update_teams(event, force_update = force_update)
+            update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
             update_match_predictions(event, matches, teams)
             #update_rank_predictions(matches, teams)
         #    print(matches)

@@ -35,3 +35,8 @@ def find(col, filter, database = 'pf-database-2022'):
     db = client[database]
     col = db[col]
     return col.find(filter)
+
+def drop(col, database = 'pf-database-2022'):
+    db = db = client[database]
+    col = db[col]
+    col.drop()
