@@ -10,8 +10,7 @@ from Types.Ranking import Rank, Rankings
 import TBA
 import DB_Access as db
 from Process_Data import build_score_matrix, solve_matrix, get_labeled_metrics, get_prob
-from datetime import datetime
-
+from datetime import datetime, timedelta
 
 
 
@@ -25,9 +24,8 @@ def update_events(force_update = False):
     event_list = []
     for event in raw_events:
         try:
-            start = get_as_date(event['start_date'])
-            end = get_as_date(event['end_date'])
-            
+            start = get_as_date(event['start_date']) - timedelta(days = 1)
+            end = get_as_date(event['end_date']) + timedelta(days = 1)
             #if event['event_code'] == 'code':
             #if today >= start:
             if today >= start and today <= end or force_update: # code event['event_code'] == 'week0': #

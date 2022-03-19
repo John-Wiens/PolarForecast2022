@@ -30,6 +30,7 @@ export class MatchesComponent implements OnInit {
 
   ngOnInit(): void {
     this.getMatches();
+    this.getFinalsMatches();
     this.data.sort = this.sort;
     this.finalsData.sort = this.finalsSort;
     this.innerWidth = window.innerWidth;
@@ -72,13 +73,7 @@ export class MatchesComponent implements OnInit {
                 elims = false;
               }
               //this.data[i]['match_number'] = String(this.data[i]['match_number']).padStart(3, '0');
-            }
-            if (elims) {
-              this.getFinalsMatches();
-              this.elims = true;
-              console.log(this.elims);
-            }
-
+            } 
           }
         });
     }
@@ -107,6 +102,10 @@ export class MatchesComponent implements OnInit {
             console.log(this.finalsData);
             this.finalsDataSource = new MatTableDataSource(this.finalsData);
             this.finalsDataSource.sort = this.finalsSort;
+	    if(this.finalsData.length > 0){
+		this.elims = true;
+	    }
+			   
           }
         });
     }
