@@ -97,10 +97,10 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     estimator_scores = team_array @ team_powers
     estimator_error = np.square(score_array - estimator_scores) # Compute Squared Errors
     team_variances = solve_matrix(team_array, estimator_error) # Compute Each Teams contribution to squared error
-    
+    skip_update = set()
     '''
     # Fill in Missing Data as best as possible
-    skip_update = set()
+    
     for team in zip(teams, team_powers, labeled_metrics):
         #print(team)
         # No Data for this team at this event yet
@@ -392,8 +392,8 @@ def update_data():
             matches = update_matches(event, force_update= force_update)
             teams = update_teams(event, force_update = force_update)
             update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
-            update_match_predictions(event, matches, teams)
-            update_schedule_strengths(event, matches, teams)
+            #update_match_predictions(event, matches, teams)
+            #update_schedule_strengths(event, matches, teams)
             #update_rank_predictions(matches, teams)
         #    print(matches)
 
