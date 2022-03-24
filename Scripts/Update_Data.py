@@ -63,14 +63,14 @@ def update_teams(event_code, force_update = False):
     db_teams = []
     for team in teams:
         team_lookup = db.find_one('teams', team["key"][3:])
-        if force_update or team_lookup is None or team_lookup['opr'] == 0:
-            db_team = build_team(team) # Force the pydantic type for type checking
-            if db_team is not None:
-                as_dict = db_team.dict()
-                db.update_one('teams', as_dict)
-                db_teams.append(as_dict)
-        else:
-            db_teams.append(team_lookup)
+        #if force_update or team_lookup is None or team_lookup['opr'] == 0:
+        db_team = build_team(team) # Force the pydantic type for type checking
+        if db_team is not None:
+            as_dict = db_team.dict()
+            db.update_one('teams', as_dict)
+            db_teams.append(as_dict)
+        #else:
+        #    db_teams.append(team_lookup)
     db_teams = sorted(db_teams, key=lambda k: float(k['key']))
 
     event = db.find_one('events',event_code)
@@ -98,6 +98,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     estimator_error = np.square(score_array - estimator_scores) # Compute Squared Errors
     team_variances = solve_matrix(team_array, estimator_error) # Compute Each Teams contribution to squared error
     
+    '''
     # Fill in Missing Data as best as possible
     skip_update = set()
     for team in zip(teams, team_powers, labeled_metrics):
@@ -108,14 +109,12 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             #Check if they have played a previous event
             previous_event_entry = db.find_one('teams', team[0]['key'])
             if previous_event_entry is not None and previous_event_entry['opr'] is not None:
-                print('Loading from Previous Event', team[0]['key'])
                 team[1][1] = previous_event_entry['auto_pr'] / 4.0
                 team[1][3] = previous_event_entry['cargo_pr'] / 2.0
                 team[2][0] = previous_event_entry['climb_pr']
                 team[2][1] = previous_event_entry['taxi_pr']
                 skip_update.add(team[0]['key'])
             else:
-                print('Loading from Archive', team[0]['key'])
                 archive_entry = db.find_one('Archive', team[0]['key'], database = 'pf-database')
                 if archive_entry is not None and archive_entry['opr'] is not None:
                     normalized_opr = (clean_num(archive_entry['opr']) * 0.75)
@@ -124,7 +123,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     team[1][1] = normalized_stats[2] / 4.0 # Auto
                     team[1][3] = normalized_stats[1] / 2.0 # Cargo                    
                     team[2][1] = normalized_stats[0] # Climb
-    
+    '''
                 
 
     team_powers[np.isnan(team_powers)] = 0
@@ -164,7 +163,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             index +=1
             
             if team['key'] not in skip_update:
-                print('Updating Team', team['key'])
+                #print('Updating Team', team['key'])
                 db.update_one('teams', team)
             
         except Exception as e:
@@ -322,6 +321,7 @@ def update_match_predictions(event, matches, teams):
 
             db.update_one('matches', match)
 
+
 def update_rank_predictions(matches, teams):
     rps = {}
     if len(matches) !=0:
@@ -388,10 +388,12 @@ def update_data():
         opr_coeffecients = update_opr_distribution_mapping()
 
         for event in events:
+            print('Updating Event', event)
             matches = update_matches(event, force_update= force_update)
             teams = update_teams(event, force_update = force_update)
             update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
             update_match_predictions(event, matches, teams)
+            update_schedule_strengths(event, matches, teams)
             #update_rank_predictions(matches, teams)
         #    print(matches)
 
