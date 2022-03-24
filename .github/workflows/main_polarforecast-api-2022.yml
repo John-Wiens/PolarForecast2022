@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'polarforecast-api-2022'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DF2EEC6D05B44BD3B1B9876D40724154 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3FF14313A8C541BA92A6A62FF7169827 }}
