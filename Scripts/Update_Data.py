@@ -392,7 +392,7 @@ def update_data():
             matches = update_matches(event, force_update= force_update)
             teams = update_teams(event, force_update = force_update)
             update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
-            #update_match_predictions(event, matches, teams)
+            update_match_predictions(event, matches, teams)
             #update_schedule_strengths(event, matches, teams)
             #update_rank_predictions(matches, teams)
         #    print(matches)
