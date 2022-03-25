@@ -63,14 +63,14 @@ def update_teams(event_code, force_update = False):
     db_teams = []
     for team in teams:
         team_lookup = db.find_one('teams', team["key"][3:])
-        #if force_update or team_lookup is None or team_lookup['opr'] == 0:
-        db_team = build_team(team) # Force the pydantic type for type checking
-        if db_team is not None:
-            as_dict = db_team.dict()
-            db.update_one('teams', as_dict)
-            db_teams.append(as_dict)
-        #else:
-        #    db_teams.append(team_lookup)
+        if force_update or team_lookup is None or team_lookup['opr'] == 0:
+            db_team = build_team(team) # Force the pydantic type for type checking
+            if db_team is not None:
+                as_dict = db_team.dict()
+                db.update_one('teams', as_dict)
+                db_teams.append(as_dict)
+        else:
+            db_teams.append(team_lookup)
     db_teams = sorted(db_teams, key=lambda k: float(k['key']))
 
     event = db.find_one('events',event_code)
@@ -98,7 +98,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     estimator_error = np.square(score_array - estimator_scores) # Compute Squared Errors
     team_variances = solve_matrix(team_array, estimator_error) # Compute Each Teams contribution to squared error
     skip_update = set()
-    '''
+    
     # Fill in Missing Data as best as possible
     
     for team in zip(teams, team_powers, labeled_metrics):
@@ -123,7 +123,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     team[1][1] = normalized_stats[2] / 4.0 # Auto
                     team[1][3] = normalized_stats[1] / 2.0 # Cargo                    
                     team[2][1] = normalized_stats[0] # Climb
-    '''
+    
                 
 
     team_powers[np.isnan(team_powers)] = 0
@@ -140,6 +140,8 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
         return
 
     max_opr = np.max(opr_matrix)
+
+
     for team in teams:
         opr = opr_matrix[index]
         pr = 100 * (opr/max_opr)
@@ -169,12 +171,12 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
         except Exception as e:
             db.log_msg("Issue Updating Team Power Rankings"+ str(team)+ str(e))
         
-    
     # Update Rankings Table
     try:
         table = []
         teams = np.array(team_list)
-        if rankings is not None:
+        print(teams, rankings)
+        if rankings is not None and len(rankings["rankings"]) != 0:
             for ranking in rankings["rankings"]:
                 team = float((ranking["team_key"])[3:])
                 index = np.searchsorted(teams, team)
@@ -211,7 +213,9 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     "power":pr
                 }
                 table.append(Rank(**row))
+        
         rankings = Rankings(**{'key': event_code, 'rankings':table})
+        #print(rankings.dict(), table)
         db.update_one('rankings', rankings.dict())                          
             
     except Exception as e:
@@ -391,6 +395,7 @@ def update_data():
             print('Updating Event', event)
             matches = update_matches(event, force_update= force_update)
             teams = update_teams(event, force_update = force_update)
+            #print(teams)
             update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
             update_match_predictions(event, matches, teams)
             #update_schedule_strengths(event, matches, teams)
