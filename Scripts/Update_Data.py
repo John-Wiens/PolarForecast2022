@@ -62,15 +62,15 @@ def update_teams(event_code, force_update = False):
     teams, is_updated = TBA.get("/event/"+event_code+"/teams")
     db_teams = []
     for team in teams:
-        team_lookup = db.find_one('teams', team["key"][3:])
-        if force_update or team_lookup is None or team_lookup['opr'] == 0:
-            db_team = build_team(team) # Force the pydantic type for type checking
-            if db_team is not None:
-                as_dict = db_team.dict()
-                db.update_one('teams', as_dict)
-                db_teams.append(as_dict)
-        else:
-            db_teams.append(team_lookup)
+        #team_lookup = db.find_one('teams', team["key"][3:])
+        #if force_update or team_lookup is None or team_lookup['opr'] == 0:
+        db_team = build_team(team) # Force the pydantic type for type checking
+        if db_team is not None:
+            as_dict = db_team.dict()
+            db.update_one('teams', as_dict)
+            db_teams.append(as_dict)
+        #else:
+        #db_teams.append(team_lookup)
     db_teams = sorted(db_teams, key=lambda k: float(k['key']))
 
     event = db.find_one('events',event_code)
@@ -100,7 +100,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     skip_update = set()
     
     # Fill in Missing Data as best as possible
-    
+    '''
     for team in zip(teams, team_powers, labeled_metrics):
         #print(team)
         # No Data for this team at this event yet
@@ -123,7 +123,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     team[1][1] = normalized_stats[2] / 4.0 # Auto
                     team[1][3] = normalized_stats[1] / 2.0 # Cargo                    
                     team[2][1] = normalized_stats[0] # Climb
-    
+    '''
                 
 
     team_powers[np.isnan(team_powers)] = 0
