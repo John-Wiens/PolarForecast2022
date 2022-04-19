@@ -11,8 +11,8 @@ import { MatTableDataSource } from '@angular/material/table';
 export class RankingsComponent implements OnInit {
 
 
-  displayedColumns: string[] = ['rank', 'team', 'opr', 'auto', 'cargo', 'cargo_count', 'climb', 'fouls', 'power'];
-  columnHeaders = ['Rank', 'Team', 'OPR', 'Auto', 'Cargo', 'Cargo Count', 'Climb', 'Fouls', 'Power'].slice();
+  displayedColumns: string[] = ['position', 'team', 'rank', 'schedule_strength', 'opr', 'auto', 'cargo', 'cargo_count', 'climb', 'fouls', 'power'];
+  columnHeaders = ['', 'Team', 'Rank', 'Schedule', 'OPR', 'Auto', 'Cargo', 'Cargo Count', 'Climb', 'Fouls', 'Power'].slice();
   columnsToDisplay: string[] = this.displayedColumns.slice();
   //displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
 

@@ -12,6 +12,7 @@ import DB_Access as db
 from Process_Data import build_score_matrix, solve_matrix, get_labeled_metrics, get_prob
 from datetime import datetime, timedelta
 
+from Evaluate_Schedules import evaluate_schedules
 
 
 def get_as_date(date)   :
@@ -26,7 +27,8 @@ def update_events(force_update = False):
         try:
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
-            if event['event_code'] == 'gal':
+            if event['event_code'] in ['hop', 'gal', 'new', 'carv','roe','tur']:
+            #if event['event_code'] == 'hop':
             #if today >= start:
             #if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
                 event_list.append(event['key'])
@@ -195,12 +197,14 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             
         except Exception as e:
             db.log_msg("Issue Updating Team Power Rankings"+ str(team)+ str(e))
-        
+    schedule_strengths = evaluate_schedules(event_code, matches, teams)
     # Update Rankings Table
     try:
         table = []
         teams = np.array(team_list)
-        #print(teams, rankings)
+        
+        
+
         if rankings is not None and len(rankings["rankings"]) != 0:
             for ranking in rankings["rankings"]:
                 team = float((ranking["team_key"])[3:])
@@ -209,6 +213,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                 
                 pr = 100 * (opr/max_opr)
                 rank = float(ranking["rank"])
+                print(schedule_strengths[team])
                 row = {
                     "team": team,
                     "rank": rank,
@@ -218,7 +223,9 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     "cargo": team_powers[index,2] + team_powers[index,3] * 2,
                     "cargo_count":team_powers[index,0] + team_powers[index,1] + team_powers[index,2] + team_powers[index,3],
                     "fouls":team_powers[index,4],
-                    "power":pr
+                    "power":pr,
+                    "schedule_strength": round(schedule_strengths[team]['strength'],2),
+                    "expected_rank": schedule_strengths[team]['expected_rank']
                 }
                 table.append(Rank(**row))
         else:
@@ -236,7 +243,9 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     "cargo": team_powers[index,2] + team_powers[index,3] * 2,
                     "cargo_count":team_powers[index,0] + team_powers[index,1] + team_powers[index,2] + team_powers[index,3],
                     "fouls":team_powers[index,4],
-                    "power":pr
+                    "power":pr,
+                    "schedule_strength": round(schedule_strengths[team]['strength'],2),
+                    "expected_rank": schedule_strengths[team]['expected_rank']
                 }
                 table.append(Rank(**row))
         
@@ -246,7 +255,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
         db.update_one('rankings', rankings.dict())                          
             
     except Exception as e:
-        db.log_msg("Issue Updating Event Update Time", event_code, str(e))
+        db.log_msg("Issue Updating Event Update Time" + str(event_code) +  str(e))
         raise
 
 def clean_num(num):
@@ -353,23 +362,6 @@ def update_match_predictions(event, matches, teams):
             db.update_one('matches', match)
 
 
-def update_rank_predictions(matches, teams):
-    rps = {}
-    if len(matches) !=0:
-        for match in matches:
-            if match['results'] == 'Actual':
-                for i in range(0,3):
-                    blue_team = match['blue'+str(i)]
-                    if blue_team in rps:
-                        rps[blue_team] += 0
-                    else:
-                        rps[blue_team] = 0
-
-            else:
-                pass
-    else:
-        pass
-
 def update_opr_distribution_mapping():
     data = db.find('teams',{})
     if data is not None:
@@ -391,10 +383,7 @@ def update_opr_distribution_mapping():
             metrics[i][1] = team['auto_pr']
             metrics[i][2] = team['cargo_pr']
             metrics[i][3] = team['climb_pr']
-            #print(team, metrics[i])
-        
 
-        #print(metrics)
         coeffecients = np.linalg.pinv(opr) @ metrics
         return coeffecients[0]
 
@@ -422,12 +411,10 @@ def update_data():
             print('Updating Event', event)
             matches = update_matches(event, force_update= force_update)
             teams = update_teams(event, force_update = force_update)
-            #print(teams)
             update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
             update_match_predictions(event, matches, teams)
-            #update_schedule_strengths(event, matches, teams)
-            #update_rank_predictions(matches, teams)
-        #    print(matches)
+            #update_schedule_predictions(event, matches, teams)
+
 
 if __name__ == '__main__':
     update_data()

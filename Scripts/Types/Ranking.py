@@ -14,6 +14,8 @@ class Rank(BaseModel):
     cargo_count: float
     fouls: float
     power: float
+    expected_rank: int
+    schedule_strength: float
 
 
 class Rankings(BaseModel):
