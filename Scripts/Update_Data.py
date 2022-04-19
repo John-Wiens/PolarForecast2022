@@ -26,9 +26,9 @@ def update_events(force_update = False):
         try:
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
-            #if event['event_code'] == 'code':
+            if event['event_code'] == 'gal':
             #if today >= start:
-            if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
+            #if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
                 event_list.append(event['key'])
                 db.update_one('events', event)
 
@@ -80,8 +80,9 @@ def update_teams(event_code, force_update = False):
     return db_teams
 
 
-def update_calculations(event_code, matches, teams, opr_coeffecients, force_update = False, ):
+def update_calculations(event_code, matches, teams, opr_coeffecients, force_update = False):
     rankings, is_updated = TBA.get("/event/"+event_code+"/rankings")
+    event_stats, is_updated = TBA.get("/event/"+event_code)
     team_list = [float(team['key']) for team in teams]
     team_array, score_array = build_score_matrix(event_code, team_list, matches)
     labeled_metrics = get_labeled_metrics(team_list, matches)
@@ -95,35 +96,49 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     team_powers = solve_matrix(team_array,score_array)
     
     estimator_scores = team_array @ team_powers
+
+    match = 0 
+    
+    errors = []
+
+    for estimate, score in zip(estimator_scores, score_array):
+        errors.append(np.sum(np.square(estimate - score)[0:4]))
+
+    errors = np.array(errors)
+    std = np.std(errors)
+    average = np.median(errors)
+    outliers = (errors > 3*std + average)
+    team_array[outliers,:] = np.zeros([1,team_array.shape[1]])
+    score_array[outliers,:] = np.zeros([1,5])
+    
+    team_powers = solve_matrix(team_array,score_array)
+    
+
     estimator_error = np.square(score_array - estimator_scores) # Compute Squared Errors
     team_variances = solve_matrix(team_array, estimator_error) # Compute Each Teams contribution to squared error
-    skip_update = set()
     
     # Fill in Missing Data as best as possible
-    '''
+    
     for team in zip(teams, team_powers, labeled_metrics):
         #print(team)
         # No Data for this team at this event yet
         if np.count_nonzero(team[2]) == 0 and np.count_nonzero(team[1]) == 0:
-            
             #Check if they have played a previous event
-            previous_event_entry = db.find_one('teams', team[0]['key'])
-            if previous_event_entry is not None and previous_event_entry['opr'] is not None:
-                team[1][1] = previous_event_entry['auto_pr'] / 4.0
-                team[1][3] = previous_event_entry['cargo_pr'] / 2.0
-                team[2][0] = previous_event_entry['climb_pr']
-                team[2][1] = previous_event_entry['taxi_pr']
-                skip_update.add(team[0]['key'])
-            else:
-                archive_entry = db.find_one('Archive', team[0]['key'], database = 'pf-database')
-                if archive_entry is not None and archive_entry['opr'] is not None:
-                    normalized_opr = (clean_num(archive_entry['opr']) * 0.75)
-                    normalized_stats = map_opr(normalized_opr, opr_coeffecients)
-                    team[2][0] = normalized_stats[3] # Taxi
-                    team[1][1] = normalized_stats[2] / 4.0 # Auto
-                    team[1][3] = normalized_stats[1] / 2.0 # Cargo                    
-                    team[2][1] = normalized_stats[0] # Climb
-    '''
+            previous_event_entries = db.find('team-history', {'team_number': float(team[0]['key'])})
+            entries = list(previous_event_entries)
+            
+            most_recent_entry = None
+            most_recent_week = -1
+            for entry in entries:
+                if (entry['week'] is not None and entry['week'] > most_recent_week and entry['week'] != event_stats['week']):
+                    most_recent_entry = entry
+                    most_recent_week = entry['week']
+            
+            if most_recent_entry is not None:
+                team[1][1] = (most_recent_entry['auto_pr'] -most_recent_entry['taxi_pr'])  / 4.0
+                team[1][3] = most_recent_entry['cargo_pr'] / 2.0
+                team[2][0] = most_recent_entry['climb_pr']
+                team[2][1] = most_recent_entry['taxi_pr']
                 
 
     team_powers[np.isnan(team_powers)] = 0
@@ -162,11 +177,21 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             team['climb_pr'] = labeled_metrics[index,0]
             team['climb_pr_var'] = labeled_metrics[index,2]
             team['fouls'] = team_powers[index,4]
-            index +=1
             
-            if team['key'] not in skip_update:
-                #print('Updating Team', team['key'])
-                db.update_one('teams', team)
+            
+            
+            db.update_one('teams', team)
+
+            team_history = team
+            team_history['key'] = event_code + '-'+team_history['key']
+            team_history['event'] = event_code
+            team_history['year'] = event_stats['year']
+            team_history['week'] = event_stats['week']
+
+
+            db.update_one('team-history', team_history)
+
+            index +=1
             
         except Exception as e:
             db.log_msg("Issue Updating Team Power Rankings"+ str(team)+ str(e))
@@ -175,7 +200,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
     try:
         table = []
         teams = np.array(team_list)
-        print(teams, rankings)
+        #print(teams, rankings)
         if rankings is not None and len(rankings["rankings"]) != 0:
             for ranking in rankings["rankings"]:
                 team = float((ranking["team_key"])[3:])
@@ -193,7 +218,8 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                     "cargo": team_powers[index,2] + team_powers[index,3] * 2,
                     "cargo_count":team_powers[index,0] + team_powers[index,1] + team_powers[index,2] + team_powers[index,3],
                     "fouls":team_powers[index,4],
-                    "power":pr}
+                    "power":pr
+                }
                 table.append(Rank(**row))
         else:
             for team in teams:
@@ -215,6 +241,7 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                 table.append(Rank(**row))
         
         rankings = Rankings(**{'key': event_code, 'rankings':table})
+        
         #print(rankings.dict(), table)
         db.update_one('rankings', rankings.dict())                          
             
