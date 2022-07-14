@@ -1,8 +1,8 @@
 import pymongo
-import config
+import os
 from datetime import datetime
 
-client = pymongo.MongoClient(config.DB_URI)
+client = pymongo.MongoClient(os.environ['PF_DB_URI'])
 
 
 def log_msg(msg, type = 'INFO', database = 'pf-database-2022'):

@@ -26,9 +26,9 @@ def update_events(force_update = False):
         try:
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
-            #if event['event_code'] == 'code':
+            if event['event_code'] == 'iri':
             #if today >= start:
-            if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
+            #if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
                 event_list.append(event['key'])
                 db.update_one('events', event)
 
