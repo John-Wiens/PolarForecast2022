@@ -6,14 +6,27 @@
           <h1> Rankings</h1>
           <table mat-table [dataSource]="dataSource" matSort class="table-responsive table" matSortActive="power"
             matSortDirection="desc">
-            <ng-container matColumnDef="rank">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header> Rank </th>
-              <td mat-cell *matCellDef="let element"> {{element.rank}} </td>
+
+            <ng-container matColumnDef="position">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> </th>
+              <td mat-cell *matCellDef="let element; let i = index">{{i + 1}}</td>
             </ng-container>
 
             <ng-container matColumnDef="team">
               <th mat-header-cell *matHeaderCellDef mat-sort-header> Team </th>
               <td mat-cell *matCellDef="let element"> {{element.team}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="rank">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Rank </th>
+              <td mat-cell *matCellDef="let element"> {{element.rank}} ({{element.expected_rank}})
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="schedule_strength">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header> Schedule </th>
+              <td mat-cell *matCellDef="let element"> {{element.schedule_strength}}
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="opr">
