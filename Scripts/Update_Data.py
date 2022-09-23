@@ -255,6 +255,10 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                 }
                 table.append(Rank(**row))
         
+        #with open(f'{event_code}.csv','w') as f:
+        #    for entry in table:
+        #        f.write(f'{entry.team},{entry.rank},{entry.opr},{entry.auto},{entry.climb},{entry.cargo},{entry.cargo_count},{entry.fouls},{entry.power},{entry.schedule_strength},{entry.expected_rank}\n')
+
         rankings = Rankings(**{'key': event_code, 'rankings':table})
         
         #print(rankings.dict(), table)
