@@ -27,9 +27,11 @@ def update_events(force_update = False):
         try:
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
-            if event['event_code'] == 'iri':
+            #if event['event_code'] in ["hop", "new", "gal", "carv", "roe", "tur"]:
+            if event['event_code'] == 'cc':
             #if today >= start:
-            #if today >= start and today <= end and event['event_code'] == 'utwv' or force_update: # code event['event_code'] == 'week0': #
+            #if today >= start  or force_update or event['event_code'] == 'cc': #and today <= end
+                
                 event_list.append(event['key'])
                 db.update_one('events', event)
 
@@ -71,7 +73,7 @@ def update_teams(event_code, force_update = False):
             db.update_one('teams', as_dict)
             db_teams.append(as_dict)
         #else:
-        #db_teams.append(team_lookup)
+        #    db_teams.append(team_lookup)
     db_teams = sorted(db_teams, key=lambda k: float(k['key']))
 
     event = db.find_one('events',event_code)
@@ -130,18 +132,22 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             
             most_recent_entry = None
             most_recent_week = -1
+            most_recent_opr = 0
             for entry in entries:
-                if (entry['week'] is not None and entry['week'] > most_recent_week and entry['week'] != event_stats['week']):
+                if entry['event'] != event_code and entry['opr'] > most_recent_opr:
+                #if (entry['week'] is not None and entry['week'] > most_recent_week and entry['week'] != event_stats['week'] and entry['event'] != event_code):
+                #if reference_event is not None
                     most_recent_entry = entry
                     most_recent_week = entry['week']
+                    most_recent_opr = entry['opr']
             
             if most_recent_entry is not None:
+                print("Updating Data", most_recent_entry)
                 team[1][1] = (most_recent_entry['auto_pr'] -most_recent_entry['taxi_pr'])  / 4.0
                 team[1][3] = most_recent_entry['cargo_pr'] / 2.0
                 team[2][0] = most_recent_entry['climb_pr']
                 team[2][1] = most_recent_entry['taxi_pr']
-                
-
+        
     team_powers[np.isnan(team_powers)] = 0
     team_powers = np.around(team_powers,decimals = 2)
 
@@ -196,23 +202,24 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
             
         except Exception as e:
             db.log_msg("Issue Updating Team Power Rankings"+ str(team)+ str(e))
+
+    update_match_predictions(event_code, matches, teams)
     schedule_strengths = evaluate_schedules(event_code, matches, teams)
     # Update Rankings Table
     try:
         table = []
-        teams = np.array(team_list)
+        np_teams = np.array(team_list)
         
         
 
         if rankings is not None and len(rankings["rankings"]) != 0:
             for ranking in rankings["rankings"]:
                 team = float((ranking["team_key"])[3:])
-                index = np.searchsorted(teams, team)
+                index = np.searchsorted(np_teams, team)
                 opr = opr_matrix[index]
                 
                 pr = 100 * (opr/max_opr)
                 rank = float(ranking["rank"])
-                print(schedule_strengths[team])
                 row = {
                     "team": team,
                     "rank": rank,
@@ -228,8 +235,8 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
                 }
                 table.append(Rank(**row))
         else:
-            for team in teams:
-                index = np.searchsorted(teams, team)
+            for team in np_teams:
+                index = np.searchsorted(np_teams, team)
                 opr = opr_matrix[index]
                 
                 pr = 100 * (opr/max_opr)
@@ -251,8 +258,8 @@ def update_calculations(event_code, matches, teams, opr_coeffecients, force_upda
         rankings = Rankings(**{'key': event_code, 'rankings':table})
         
         #print(rankings.dict(), table)
-        db.update_one('rankings', rankings.dict())                          
-            
+        db.update_one('rankings', rankings.dict())                       
+        return teams
     except Exception as e:
         db.log_msg("Issue Updating Event Update Time" + str(event_code) +  str(e))
         raise
@@ -318,22 +325,30 @@ def update_match_predictions(event, matches, teams):
                     db.log_msg("Issue Updating Event Match Predictions", event +  str(e))
                     
 
-            if predicted_blue_endgame >= 16:
+            if predicted_blue_endgame >= 20:
                 match["blue_hanger_rp"] = 1
                 match["blue_rp"] +=1
 
-            if predicted_blue_cells >= 20:
+            if predicted_blue_cells >= 30:
                 match["blue_cargo_rp"] = 1
+                match["blue_rp"] +=1
+            
+            if predicted_blue_cells >= 40 or predicted_blue_endgame >= 40:
                 match["blue_rp"] +=1
 
 
-            if predicted_red_endgame >= 16:
+            if predicted_red_endgame >= 20:
                 match["red_hanger_rp"] = 1
                 match["red_rp"] +=1
                 
-            if predicted_red_cells >= 20:
+            if predicted_red_cells >= 30:
                 match["red_cargo_rp"] = 1
                 match["red_rp"] +=1
+
+            if predicted_red_cells >= 40 or predicted_red_endgame >= 40:
+                match["red_rp"] +=1
+
+            
 
             match["predicted_blue_score"] = clean_num(match["blue_score"])
             match["predicted_red_score"] = clean_num(match["red_score"])
@@ -407,12 +422,14 @@ def update_data():
         opr_coeffecients = update_opr_distribution_mapping()
 
         for event in events:
-            print('Updating Event', event)
-            matches = update_matches(event, force_update= force_update)
-            teams = update_teams(event, force_update = force_update)
-            update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
-            update_match_predictions(event, matches, teams)
-            #update_schedule_predictions(event, matches, teams)
+            try:
+                print('Updating Event', event)
+                matches = update_matches(event, force_update= force_update)
+                teams = update_teams(event, force_update = force_update)
+                update_calculations(event, matches, teams, opr_coeffecients, force_update = force_update)
+                
+            except Exception as e:
+                print("Unable to Update Event", event, e)
 
 
 if __name__ == '__main__':

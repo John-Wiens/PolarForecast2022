@@ -20,13 +20,13 @@ def get_random_team(team_list, exclude_teams = []):
 
     return team
 
-def get_random_alliances(team_list):
-    blue1 = get_random_team(team_list)
-    blue2 = get_random_team(team_list, exclude_teams=[blue1])
-    blue3 = get_random_team(team_list, exclude_teams=[blue1, blue2])
-    red1 = get_random_team(team_list, exclude_teams=[blue1, blue2, blue3])
-    red2 = get_random_team(team_list, exclude_teams=[blue1, blue2, blue3, red1])
-    red3 = get_random_team(team_list, exclude_teams=[blue1, blue2, blue3, red1, red2])
+def get_random_alliances(team_list, exclude_teams = []):
+    blue1 = get_random_team(team_list, exclude_teams = exclude_teams)
+    blue2 = get_random_team(team_list, exclude_teams= exclude_teams + [blue1])
+    blue3 = get_random_team(team_list, exclude_teams= exclude_teams + [blue1, blue2])
+    red1 = get_random_team(team_list, exclude_teams= exclude_teams + [blue1, blue2, blue3])
+    red2 = get_random_team(team_list, exclude_teams= exclude_teams + [blue1, blue2, blue3, red1])
+    red3 = get_random_team(team_list, exclude_teams= exclude_teams + [blue1, blue2, blue3, red1, red2])
     return [blue1, blue2, blue3], [red1, red2, red3]
 
 def get_alliance_metrics(alliance, teams):
@@ -42,8 +42,13 @@ def get_alliance_metrics(alliance, teams):
     
 def simulate_event(teams, team_list, num_matches):
     rps = {}
+    exclude_teams = []
     for j in range(0, num_matches):
-        blue_alliance, red_alliance = get_random_alliances(team_list)
+        if len(team_list) - len(exclude_teams) < 6:
+            exclude_teams = []
+        blue_alliance, red_alliance = get_random_alliances(team_list, exclude_teams = exclude_teams)
+        exclude_teams += blue_alliance
+        exclude_teams += red_alliance
         
         blue_score, blue_climb, blue_cargo = get_alliance_metrics(blue_alliance, teams)
         red_score, red_climb, red_cargo = get_alliance_metrics(red_alliance, teams)
@@ -52,15 +57,21 @@ def simulate_event(teams, team_list, num_matches):
         red_rp = 0
 
         
-        if blue_climb >= 16:
+        if blue_climb >= 20:
             blue_rp +=1
-        if blue_cargo >= 20:
+        if blue_cargo >= 30:
+            blue_rp +=1
+
+        if blue_climb >= 40 or blue_cargo >= 40:
             blue_rp +=1
 
         
-        if red_climb >= 16:
+        if red_climb >= 20:
             red_rp +=1
-        if red_cargo >= 20:
+        if red_cargo >= 30:
+            red_rp +=1
+
+        if red_climb >= 40 or red_cargo >= 40:
             red_rp +=1
         
 
@@ -87,6 +98,7 @@ def simulate_event(teams, team_list, num_matches):
 
 
 def evaluate_schedules(event, matches, teams):
+
     team_rps = {}
     team_list = []
     team_dict = {}
@@ -128,7 +140,6 @@ def evaluate_schedules(event, matches, teams):
     sum_strength = 0
     for team in team_rps.keys():
         results = np.array(team_rps[team]['Simulated'])
-        print(team, results)
         predicted = team_rps[team]['RP']
         average = np.average(results)
         high = np.max(results)
@@ -143,7 +154,7 @@ def evaluate_schedules(event, matches, teams):
         print("Team: {}, Predicted RP: {}, Average Schedule RP: {}, Schedule Strength: {}".format(team, predicted, average, strength ))
     
     strength_adjustment = sum_strength / len(team_rps)
-    schedules = dict(sorted(team_rps.items(), key = lambda item:item[1]['average'], reverse = True))
+    schedules = dict(sorted(team_rps.items(), key = lambda item:item[1]['RP'], reverse = True))
     count = 1
     for team in schedules.keys():
         schedules[team]['strength'] = team_rps[team]['strength'] - strength_adjustment 
