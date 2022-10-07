@@ -28,7 +28,7 @@ def update_events(force_update = False):
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
             #if event['event_code'] in ["hop", "new", "gal", "carv", "roe", "tur"]:
-            if event['event_code'] == 'cc':
+            if event['event_code'] == 'cokc':
             #if today >= start:
             #if today >= start  or force_update or event['event_code'] == 'cc': #and today <= end
                 
@@ -301,7 +301,7 @@ def update_match_predictions(event, matches, teams):
                     red_team = db.find_one('teams', match['red'+str(i)])
 
                     match["blue_score"] += clean_num(blue_team["opr"])
-                    match["blue_auto_score"] += clean_num(blue_team["auto_pr"])
+                    match["blue_auto_score"] += clean_num(blue_team["auto_pr"]) + 4
                     match["blue_endgame_score"] += clean_num(blue_team["climb_pr"])
                     match["blue_teleop_score"] += clean_num(blue_team["cargo_pr"])
 
@@ -309,18 +309,18 @@ def update_match_predictions(event, matches, teams):
 
 
                     match["red_score"] += clean_num(red_team["opr"])
-                    match["red_auto_score"] += clean_num(red_team["auto_pr"])
+                    match["red_auto_score"] += clean_num(red_team["auto_pr"]) + 4
                     match["red_endgame_score"] += clean_num(red_team["climb_pr"])
                     match["red_teleop_score"] += clean_num(red_team["cargo_pr"])
 
                     red_variance += clean_num(red_team['auto_pr_var']) + clean_num(red_team["cargo_pr_var"]) +  clean_num(red_team['climb_pr_var'])
 
 
-                    predicted_blue_cells += clean_num(blue_team["cargo_count_pr"])
+                    predicted_blue_cells += clean_num(blue_team["cargo_count_pr"]) * 1.25
                     predicted_blue_endgame += clean_num(blue_team["climb_pr"])
                     blue_climb_variance += clean_num(blue_team["climb_pr_var"])
 
-                    predicted_red_cells += clean_num(red_team["cargo_count_pr"])
+                    predicted_red_cells += clean_num(red_team["cargo_count_pr"]) * 1.25
                     predicted_red_endgame += clean_num(red_team["climb_pr"])
                     red_climb_variance += clean_num(red_team["climb_pr_var"])
 
@@ -329,28 +329,23 @@ def update_match_predictions(event, matches, teams):
                     db.log_msg("Issue Updating Event Match Predictions", event +  str(e))
                     
 
-            if predicted_blue_endgame >= 20:
+            if predicted_blue_endgame >= 16:
                 match["blue_hanger_rp"] = 1
                 match["blue_rp"] +=1
 
-            if predicted_blue_cells >= 30:
+            if predicted_blue_cells >= 20:
                 match["blue_cargo_rp"] = 1
                 match["blue_rp"] +=1
             
-            if predicted_blue_cells >= 40 or predicted_blue_endgame >= 40:
-                match["blue_rp"] +=1
 
-
-            if predicted_red_endgame >= 20:
+            if predicted_red_endgame >= 16:
                 match["red_hanger_rp"] = 1
                 match["red_rp"] +=1
                 
-            if predicted_red_cells >= 30:
+            if predicted_red_cells >= 20:
                 match["red_cargo_rp"] = 1
                 match["red_rp"] +=1
 
-            if predicted_red_cells >= 40 or predicted_red_endgame >= 40:
-                match["red_rp"] +=1
 
             
 

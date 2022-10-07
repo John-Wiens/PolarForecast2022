@@ -57,21 +57,17 @@ def simulate_event(teams, team_list, num_matches):
         red_rp = 0
 
         
-        if blue_climb >= 20:
+        if blue_climb >= 16:
             blue_rp +=1
-        if blue_cargo >= 30:
-            blue_rp +=1
-
-        if blue_climb >= 40 or blue_cargo >= 40:
+        if blue_cargo >= 20:
             blue_rp +=1
 
         
-        if red_climb >= 20:
-            red_rp +=1
-        if red_cargo >= 30:
-            red_rp +=1
 
-        if red_climb >= 40 or red_cargo >= 40:
+        
+        if red_climb >= 16:
+            red_rp +=1
+        if red_cargo >= 20:
             red_rp +=1
         
 
@@ -162,6 +158,8 @@ def evaluate_schedules(event, matches, teams):
         del schedules[team]['Simulated']
         count +=1
 
+    for team in schedules.keys():
+        print(team, schedules[team])
     
     
     return schedules
