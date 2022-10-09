@@ -28,7 +28,7 @@ def update_events(force_update = False):
             start = get_as_date(event['start_date']) - timedelta(days = 1)
             end = get_as_date(event['end_date']) + timedelta(days = 1)
             #if event['event_code'] in ["hop", "new", "gal", "carv", "roe", "tur"]:
-            if event['event_code'] == 'cokc' or event['event_code'] == 'cocri':
+            if event['event_code'] == 'cokc' or event['event_code'] == 'cocri' or event['event_code'] == 'coden':
             #if today >= start:
             #if today >= start  or force_update or event['event_code'] == 'cc': #and today <= end
                 
